@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Сектора гуманитарных нужд: Мали, Буркина-Фасо, Нигер</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    #sahel-sector-interface,
+    #sahel-sector-interface * { box-sizing: border-box; }
+
+    #sahel-sector-interface {
+      width: 100%;
+      background: #FBFBFB;
+      color: #202020;
+      font-family: 'Montserrat', Arial, sans-serif;
+      padding: 18px 16px 19px;
+      overflow: visible;
+    }
+
+    #sahel-sector-interface .wrap {
+      width: min(1160px, 100%);
+      margin: 0 auto;
+    }
+
+    #sahel-sector-interface .sector-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-start;
+      margin: 18px 0 28px;
+      max-width: 520px;
+    }
+
+    #sahel-sector-interface .sector-btn {
+      appearance: none;
+      border: 1px solid rgba(0,0,0,.12);
+      cursor: pointer;
+      padding: 12px 19px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 800;
+      color: #242424;
+      background: #ffffff;
+      box-shadow: none;
+      transition: background .18s ease, color .18s ease, border-color .18s ease;
+    }
+
+    #sahel-sector-interface .sector-btn:hover {
+      background: #f1f1f1;
+      box-shadow: none;
+      transform: none;
+    }
+
+    #sahel-sector-interface .sector-btn.active {
+      color: #fff;
+      background: #D71C1C;
+      border-color: #D71C1C;
+      box-shadow: none;
+    }
+
+    #sahel-sector-interface .grid {
+      display: grid;
+      grid-template-columns: minmax(330px, .86fr) minmax(560px, 1.14fr);
+      gap: 22px;
+      align-items: center;
+    }
+
+    #sahel-sector-interface .left-panel {
+      min-height: 455px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    #sahel-sector-interface .selected-name {
+      font-size: 26px;
+      line-height: 1.18;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    #sahel-sector-interface .selected-total {
+      color: #D71C1C;
+      font-size: 34px;
+      line-height: 1.1;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    #sahel-sector-interface .total-note {
+      font-size: 14px;
+      color: #707070;
+      margin-bottom: 28px;
+    }
+
+    #sahel-sector-interface .bars {
+      display: grid;
+      gap: 19px;
+    }
+
+    #sahel-sector-interface .bar-row-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 7px;
+    }
+
+    #sahel-sector-interface .country-name {
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    #sahel-sector-interface .country-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: #D71C1C;
+      white-space: nowrap;
+    }
+
+    #sahel-sector-interface .bar-track {
+      width: 100%;
+      height: 17px;
+      border-radius: 999px;
+      background: #E7E7E7;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.08);
+    }
+
+    #sahel-sector-interface .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: #D71C1C;
+      transition: width .55s cubic-bezier(.2,.8,.2,1);
+    }
+
+    #sahel-sector-interface .right-panel {
+      min-height: 490px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #sahel-sector-interface .custom-legend {
+      display: flex;
+      justify-content: center;
+      gap: 22px;
+      align-items: center;
+      margin: 0 0 22px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #222;
+    }
+
+    #sahel-sector-interface .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    #sahel-sector-interface .legend-square {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      flex: 0 0 10px;
+    }
+
+    #sahel-sector-interface .radar-box {
+      width: min(650px, 100%);
+      height: 455px;
+      position: relative;
+    }
+
+    #sahel-sector-interface #radarValue {
+      min-height: 38px;
+      margin-top: 10px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #D71C1C;
+      line-height: 1.25;
+    }
+
+    #sahel-sector-interface .hint {
+      margin-top: 5px;
+      text-align: center;
+      font-size: 13px;
+      color: #777;
+    }
+
+    #sahel-sector-interface .source {
+      margin-top: 18px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #888;
+      text-align: center;
+    }
+
+    @media (max-width: 860px) {
+      #sahel-sector-interface .sector-buttons { max-width: none; }
+      #sahel-sector-interface .grid { grid-template-columns: 1fr; gap: 26px; }
+      #sahel-sector-interface .left-panel { min-height: auto; }
+      #sahel-sector-interface .right-panel { min-height: auto; }
+      #sahel-sector-interface .radar-box { height: 380px; }
+      #sahel-sector-interface .selected-total { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+<div id="sahel-sector-interface">
+  <div class="wrap">
+    <div class="grid">
+      <section class="left-panel" aria-label="Сравнение по выбранному сектору">
+        <div class="sector-buttons" id="sectorButtons"></div>
+        <div class="selected-name" id="selectedName"></div>
+        <div class="selected-total" id="selectedTotal"></div>
+        <div class="total-note">суммарно по трём странам</div>
+        <div class="bars" id="bars"></div>
+      </section>
+
+      <section class="right-panel" aria-label="Радар секторных нужд">
+        <div class="custom-legend" aria-hidden="true">
+          <span class="legend-item"><span class="legend-square" style="background:#111111"></span>Мали</span>
+          <span class="legend-item"><span class="legend-square" style="background:#D71C1C"></span>Буркина-Фасо</span>
+          <span class="legend-item"><span class="legend-square" style="background:#7A7A7A"></span>Нигер</span>
+        </div>
+        <div class="radar-box"><canvas id="sectorRadar"></canvas></div>
+        <div id="radarValue">Наведите на точку радара</div>
+        <div class="hint">точка = сектор; линия = страна</div>
+      </section>
+    </div>
+
+    <div class="source">
+      Источник: <span id="dataSourceStatus">Мали и Буркина-Фасо считаются из Excel-файлов; Нигер задан по HNRP 2025.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const sectors = [
+    { key: 'all', label: 'Все', shortLabel: 'Все', radarLabel: 'Все', radar: false },
+    { key: 'food', label: 'Продовольственная безопасность', shortLabel: 'Еда', radarLabel: 'Еда', radar: true },
+    { key: 'wash', label: 'Вода и санитария', shortLabel: 'Вода', radarLabel: 'Вода', radar: true },
+    { key: 'health', label: 'Здравоохранение', shortLabel: 'Здоровье', radarLabel: 'Здоровье', radar: true },
+    { key: 'education', label: 'Образование', shortLabel: 'Образование', radarLabel: 'Образование', radar: true },
+    { key: 'nutrition', label: 'Питание', shortLabel: 'Питание', radarLabel: 'Питание', radar: false },
+    { key: 'shelter', label: 'Убежище и непродовольственные товары', shortLabel: 'Жильё', radarLabel: 'Жильё', radar: true },
+    { key: 'protection', label: 'Защита', shortLabel: 'Защита', radarLabel: 'Защита', radar: true },
+    { key: 'child', label: 'Защита детей', shortLabel: 'Защита детей', radarLabel: 'Защита детей', radar: false },
+    { key: 'gbv', label: 'Гендерное насилие', shortLabel: 'Гендерное насилие', radarLabel: 'Гендерное насилие', radar: false },
+    { key: 'mine', label: 'Мины', shortLabel: 'Мины', radarLabel: 'Мины', radar: false },
+    { key: 'refugees', label: 'Беженцы в нужде', shortLabel: 'Беженцы', radarLabel: 'Беженцы', radar: false }
+  ];
+
+  // Порядок осей радара строго как на референсе: верх → правый верх → правый низ → низ → левый низ → левый верх
+  const radarOrder = ['food', 'wash', 'health', 'protection', 'shelter', 'education'];
+  const radarSectors = radarOrder.map(key => sectors.find(s => s.key === key));
+
+  const countries = [
+    { key: 'mali', label: 'Мали', color: '#111111', soft: 'rgba(0,0,0,.08)' },
+    { key: 'burkina', label: 'Буркина-Фасо', color: '#D71C1C', soft: 'rgba(215,28,28,.12)' },
+    { key: 'niger', label: 'Нигер', color: '#7A7A7A', soft: 'rgba(122,122,122,.10)' }
+  ];
+
+  const fallbackValues = {
+    mali: { all: 6152338, food: 2975144, wash: 3256021, health: 3873207, protection: 3136860, shelter: 2332789, education: 1810163, nutrition: 2838299, gbv: 2271397, child: 1727670, mine: 1344847, refugees: 0 },
+    burkina: { all: 6443253, food: 2800725, wash: 2830639, health: 2031499, protection: 3800892, shelter: 2497664, education: 1992887, nutrition: 1314596, gbv: 1322131, child: 1842918, mine: 1909222, refugees: 0 },
+    niger: { all: 2600000, food: 1100000, wash: 1100000, health: 1200000, protection: 1200000, shelter: 885200, education: 1400000, nutrition: 669600, gbv: 691700, child: 1100000, mine: 672700, refugees: 449200 }
+  };
+  const values = JSON.parse(JSON.stringify(fallbackValues));
+
+  const fmt = n => n.toLocaleString('ru-RU');
+  const shortFmt = n => {
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.', ',') + ' млн';
+    if (n >= 1000) return (n / 1000).toFixed(0).replace('.', ',') + ' тыс.';
+    return fmt(n);
+  };
+
+  let selected = 'all';
+
+  const buttonsEl = document.getElementById('sectorButtons');
+  const selectedNameEl = document.getElementById('selectedName');
+  const selectedTotalEl = document.getElementById('selectedTotal');
+  const barsEl = document.getElementById('bars');
+  const radarValueEl = document.getElementById('radarValue');
+  const dataSourceStatusEl = document.getElementById('dataSourceStatus');
+
+  function parseCellNumber(v){
+    if (v === null || v === undefined || v === '' || v === '-') return 0;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    const cleaned = String(v).replace(/\u00A0/g, ' ').replace(/\s/g, '').replace(',', '.').replace(/[−–—-]/g, '');
+    if (!cleaned) return 0;
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function normalizeHeader(h){
+    return String(h || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9а-яё]/gi, '');
+  }
+
+  function sumColumns(rows, headerRowIndex, mapping){
+    const headers = rows[headerRowIndex] || [];
+    const indexByHeader = new Map();
+    headers.forEach((h, i) => indexByHeader.set(normalizeHeader(h), i));
+    const out = {};
+    Object.entries(mapping).forEach(([key, possibleHeaders]) => {
+      const colIndex = possibleHeaders.map(normalizeHeader).map(name => indexByHeader.get(name)).find(i => i !== undefined);
+      if (colIndex === undefined) return;
+      out[key] = Math.round(rows.slice(headerRowIndex + 1).reduce((sum, row) => sum + parseCellNumber(row[colIndex]), 0));
+    });
+    return out;
+  }
+
+  async function readWorkbook(url, headerRowIndex, mapping){
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) throw new Error('Не удалось загрузить ' + url);
+    const buffer = await response.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    return sumColumns(rows, headerRowIndex, mapping);
+  }
+
+  async function loadExcelData(){
+    if (typeof XLSX === 'undefined') return;
+    const maliMap = { all: ['PiN définitif'], food: ['Sécurité alimentaire'], wash: ['WASH'], health: ['Santé'], protection: ['Protection globale'], shelter: ['Abri'], education: ['Éducation'], nutrition: ['Nutrition'], gbv: ['GBV'], child: ['PE'], mine: ["L’action anti-mines", "L'action anti-mines"] };
+    const burkinaMap = { all: ['Final PiN'], food: ['SECAL'], wash: ['WASH'], health: ['Sante', 'Santé'], protection: ['Protection'], shelter: ['Abris'], education: ['Education', 'Éducation'], nutrition: ['Nutrition'], gbv: ['VBG'], child: ['PE'], mine: ['LAM'], refugees: ['Refugies PIN', 'Réfugiés PIN'] };
+    const loaded = [];
+    try { Object.assign(values.mali, await readWorkbook('./mali.xlsx', 1, maliMap)); loaded.push('Мали'); } catch (e) { console.warn(e); }
+    try { Object.assign(values.burkina, await readWorkbook('./burkina faso.xlsx', 0, burkinaMap)); loaded.push('Буркина-Фасо'); } catch (e) { console.warn(e); }
+    if (loaded.length && dataSourceStatusEl) dataSourceStatusEl.textContent = loaded.join(' и ') + ' пересчитаны из Excel; Нигер задан по HNRP 2025.';
+    refreshRadarData();
+    renderBars();
+  }
+
+  function refreshRadarData(){
+    if (!radar) return;
+    radar.data.datasets.forEach((dataset, i) => {
+      const countryKey = countries[i].key;
+      dataset.data = radarSectors.map(s => values[countryKey][s.key] || 0);
+    });
+    const maxRadar = Math.max(...countries.flatMap(c => radarSectors.map(s => values[c.key][s.key] || 0)));
+    radar.options.scales.r.suggestedMax = Math.ceil(maxRadar / 500000) * 500000;
+    radar.update();
+  }
+
+  function renderButtons(){
+    buttonsEl.innerHTML = '';
+    sectors.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'sector-btn' + (s.key === selected ? ' active' : '');
+      btn.type = 'button';
+      btn.textContent = s.shortLabel || s.label;
+      btn.addEventListener('click', () => {
+        selected = s.key;
+        renderButtons();
+        renderBars();
+      });
+      buttonsEl.appendChild(btn);
+    });
+  }
+
+  function renderBars(){
+    const sector = sectors.find(s => s.key === selected);
+    const rows = countries.map(c => ({...c, value: values[c.key][selected] || 0}));
+    const total = rows.reduce((sum, r) => sum + r.value, 0);
+    const max = Math.max(...rows.map(r => r.value));
+
+    selectedNameEl.textContent = sector.label;
+    selectedTotalEl.textContent = fmt(total) + ' человек';
+
+    barsEl.innerHTML = '';
+    rows
+      .sort((a,b) => b.value - a.value)
+      .forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <div class="bar-row-top">
+            <div class="country-name">${r.label}</div>
+            <div class="country-value">${shortFmt(r.value)}</div>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${max ? (r.value / max * 100).toFixed(2) : 0}%"></div></div>
+        `;
+        barsEl.appendChild(row);
+      });
+  }
+
+  const ctx = document.getElementById('sectorRadar');
+  const radar = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: radarSectors.map(s => s.radarLabel || s.label),
+      datasets: countries.map(c => ({
+        label: c.label,
+        data: radarSectors.map(s => values[c.key][s.key]),
+        borderColor: c.color,
+        backgroundColor: c.soft,
+        borderWidth: 4,
+        pointRadius: 2.3,
+        pointHoverRadius: 4,
+        pointHitRadius: 24,
+        pointBackgroundColor: c.color,
+        pointBorderColor: c.color,
+        pointBorderWidth: 0,
+        tension: 0,
+        borderJoinStyle: 'miter',
+        borderCapStyle: 'butt'
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: false },
+      elements: { line: { tension: 0 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          suggestedMax: 4000000,
+          ticks: { display: false, maxTicksLimit: 5 },
+          grid: { color: 'rgba(0,0,0,.14)', lineWidth: 1.2, circular: false },
+          angleLines: { color: 'rgba(0,0,0,.14)', lineWidth: 1.2 },
+          pointLabels: {
+            color: '#252525',
+            padding: 18,
+            font: { family: 'Montserrat', size: 16, weight: '800' }
+          }
+        }
+      },
+      onHover: (event, elements, chart) => {
+        const native = event.native || event;
+        const points = chart.getElementsAtEventForMode(native, 'nearest', { intersect: false }, true);
+        if (points.length) {
+          const p = points[0];
+          const country = chart.data.datasets[p.datasetIndex].label;
+          const sector = chart.data.labels[p.index];
+          const value = chart.data.datasets[p.datasetIndex].data[p.index];
+          radarValueEl.textContent = fmt(value) + " человек";
+          radarValueEl.style.color = chart.data.datasets[p.datasetIndex].borderColor;
+        } else {
+          radarValueEl.textContent = 'Наведите на точку радара';
+          radarValueEl.style.color = '#D71C1C';
+        }
+      }
+    }
+  });
+
+  document.getElementById('sectorRadar').addEventListener('mouseleave', () => {
+    radarValueEl.textContent = 'Наведите на точку радара';
+    radarValueEl.style.color = '#D71C1C';
+  });
+
+  renderButtons();
+  renderBars();
+  loadExcelData();
+})();
+</script>
+</body>
+</html>
