@@ -298,8 +298,32 @@
 
   const fmt = n => n.toLocaleString('ru-RU');
   const shortFmt = n => {
-    if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.', ',') + ' млн';
-    if (n >= 1000) return (n / 1000).toFixed(0).replace('.', ',') + ' тыс.';
+    const customRoundOneDecimal = value => {
+      const hundredths = Math.round(value * 100);
+      const secondDecimal = hundredths % 10;
+
+      let tenths;
+      if (secondDecimal === 5) {
+        tenths = hundredths / 100;
+      } else {
+        tenths = Math.round(value * 10) / 10;
+      }
+
+      if (Math.abs(tenths - Math.round(tenths)) < 0.0001) {
+        return String(Math.round(tenths));
+      }
+
+      return String(tenths).replace('.', ',');
+    };
+
+    if (n >= 1000000) {
+      return customRoundOneDecimal(n / 1000000) + ' млн';
+    }  
+
+    if (n >= 1000) {
+      return Math.round(n / 1000).toLocaleString('ru-RU') + ' тыс.';
+    }
+
     return fmt(n);
   };
 
