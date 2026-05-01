@@ -223,7 +223,7 @@
         <div class="sector-buttons" id="sectorButtons"></div>
         <div class="selected-name" id="selectedName"></div>
         <div class="selected-total" id="selectedTotal"></div>
-        <div class="total-note">суммарно по трём странам</div>
+        <div class="total-note">суммарно по трем странам</div>
         <div class="bars" id="bars"></div>
       </section>
 
@@ -240,7 +240,7 @@
     </div>
 
     <div class="source">
-      Источник: <span id="dataSourceStatus">Мали и Буркина-Фасо считаются из Excel-файлов; Нигер задан по HNRP 2025.</span>
+      Источник: <span id="dataSourceStatus">Загрузка Excel-файлов: mali.xlsx и burkina faso.xlsx… Нигер задан по HNRP 2025.</span>
     </div>
   </div>
 </div>
@@ -254,7 +254,7 @@
     { key: 'health', label: 'Здравоохранение', shortLabel: 'Здоровье', radarLabel: 'Здоровье', radar: true },
     { key: 'education', label: 'Образование', shortLabel: 'Образование', radarLabel: 'Образование', radar: true },
     { key: 'nutrition', label: 'Питание', shortLabel: 'Питание', radarLabel: 'Питание', radar: false },
-    { key: 'shelter', label: 'Убежище и непродовольственные товары', shortLabel: 'Жильё', radarLabel: 'Жильё', radar: true },
+    { key: 'shelter', label: 'Убежище и непродовольственные товары', shortLabel: 'Жилье', radarLabel: 'Жилье', radar: true },
     { key: 'protection', label: 'Защита', shortLabel: 'Защита', radarLabel: 'Защита', radar: true },
     { key: 'child', label: 'Защита детей', shortLabel: 'Защита детей', radarLabel: 'Защита детей', radar: false },
     { key: 'gbv', label: 'Гендерное насилие', shortLabel: 'Гендерное насилие', radarLabel: 'Гендерное насилие', radar: false },
@@ -272,12 +272,31 @@
     { key: 'niger', label: 'Нигер', color: '#7A7A7A', soft: 'rgba(122,122,122,.10)' }
   ];
 
-  const fallbackValues = {
-    mali: { all: 6152338, food: 2975144, wash: 3256021, health: 3873207, protection: 3136860, shelter: 2332789, education: 1810163, nutrition: 2838299, gbv: 2271397, child: 1727670, mine: 1344847, refugees: 0 },
-    burkina: { all: 6443253, food: 2800725, wash: 2830639, health: 2031499, protection: 3800892, shelter: 2497664, education: 1992887, nutrition: 1314596, gbv: 1322131, child: 1842918, mine: 1909222, refugees: 0 },
-    niger: { all: 2600000, food: 1100000, wash: 1100000, health: 1200000, protection: 1200000, shelter: 885200, education: 1400000, nutrition: 669600, gbv: 691700, child: 1100000, mine: 672700, refugees: 449200 }
+  const emptyCountryValues = () => ({ all: 0, food: 0, wash: 0, health: 0, protection: 0, shelter: 0, education: 0, nutrition: 0, gbv: 0, child: 0, mine: 0, refugees: 0 });
+
+  // ВАЖНО: для Мали и Буркина-Фасо числа НЕ зашиты в код.
+  // Они считаются в браузере из файлов ./mali.xlsx и ./burkina faso.xlsx, лежащих рядом с HTML.
+  // Фиксированные значения оставлены только для Нигера, потому что источник по нему — PDF HNRP 2025.
+  const values = {
+    mali: emptyCountryValues(),
+    burkina: emptyCountryValues(),
+    niger: {
+      all: 2600000,
+      food: 1100000,
+      wash: 1100000,
+      health: 1200000,
+      protection: 1200000,
+      shelter: 885200,
+      education: 1400000,
+      nutrition: 669600,
+      gbv: 691700,
+      child: 1100000,
+      mine: 672700,
+      refugees: 449200
+    }
   };
-  const values = JSON.parse(JSON.stringify(fallbackValues));
+
+  const loadedCountries = { mali: false, burkina: false };
 
   const fmt = n => n.toLocaleString('ru-RU');
   const shortFmt = n => {
@@ -336,9 +355,17 @@
     const maliMap = { all: ['PiN définitif'], food: ['Sécurité alimentaire'], wash: ['WASH'], health: ['Santé'], protection: ['Protection globale'], shelter: ['Abri'], education: ['Éducation'], nutrition: ['Nutrition'], gbv: ['GBV'], child: ['PE'], mine: ["L’action anti-mines", "L'action anti-mines"] };
     const burkinaMap = { all: ['Final PiN'], food: ['SECAL'], wash: ['WASH'], health: ['Sante', 'Santé'], protection: ['Protection'], shelter: ['Abris'], education: ['Education', 'Éducation'], nutrition: ['Nutrition'], gbv: ['VBG'], child: ['PE'], mine: ['LAM'], refugees: ['Refugies PIN', 'Réfugiés PIN'] };
     const loaded = [];
-    try { Object.assign(values.mali, await readWorkbook('./mali.xlsx', 1, maliMap)); loaded.push('Мали'); } catch (e) { console.warn(e); }
-    try { Object.assign(values.burkina, await readWorkbook('./burkina faso.xlsx', 0, burkinaMap)); loaded.push('Буркина-Фасо'); } catch (e) { console.warn(e); }
-    if (loaded.length && dataSourceStatusEl) dataSourceStatusEl.textContent = loaded.join(' и ') + ' пересчитаны из Excel; Нигер задан по HNRP 2025.';
+    try { Object.assign(values.mali, await readWorkbook('./mali.xlsx', 1, maliMap)); loadedCountries.mali = true; loaded.push('Мали'); } catch (e) { console.warn(e); }
+    try { Object.assign(values.burkina, await readWorkbook('./burkina faso.xlsx', 0, burkinaMap)); loadedCountries.burkina = true; loaded.push('Буркина-Фасо'); } catch (e) { console.warn(e); }
+    if (dataSourceStatusEl) {
+      if (loaded.length === 2) {
+        dataSourceStatusEl.textContent = 'Мали и Буркина-Фасо пересчитаны из Excel-файлов; Нигер задан по HNRP 2025.';
+      } else if (loaded.length === 1) {
+        dataSourceStatusEl.textContent = loaded[0] + ' пересчитана из Excel; второй Excel-файл не загружен; Нигер задан по HNRP 2025.';
+      } else {
+        dataSourceStatusEl.textContent = 'Excel-файлы не загружены. Для Мали и Буркина-Фасо будут нули; Нигер задан по HNRP 2025.';
+      }
+    }
     refreshRadarData();
     renderBars();
   }
@@ -388,7 +415,7 @@
         row.innerHTML = `
           <div class="bar-row-top">
             <div class="country-name">${r.label}</div>
-            <div class="country-value">${shortFmt(r.value)}</div>
+            <div class="country-value">${(!loadedCountries[r.key] && r.key !== 'niger') ? 'файл не загружен' : shortFmt(r.value)}</div>
           </div>
           <div class="bar-track"><div class="bar-fill" style="width:${max ? (r.value / max * 100).toFixed(2) : 0}%"></div></div>
         `;
